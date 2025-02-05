@@ -1,28 +1,32 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"matrixDocker/API/internal/domain"
-	"matrixDocker/API/internal/usecase"
+	"github.com/segmentio/kafka-go"
+	"log"
+	"matrixDocker/internal/domain"
+	"matrixDocker/internal/usecase"
 	"net/http"
 	"strconv"
 )
 
+type KafkaMessage struct {
+	ID   int         `json:"id"`
+	Data domain.User `json:"data"`
+}
+
 type UserHandler struct {
 	useCase *usecase.UserUseCase
+	writer  *kafka.Writer
 }
 
-type UserHandlerInterface interface {
-	FindUser(c *gin.Context)
-	FindUsers(c *gin.Context)
-	CreateUser(c *gin.Context)
-	DeleteUser(c *gin.Context)
-	UpdateUser(c *gin.Context)
-}
-
-func NewUserHandler(usecase *usecase.UserUseCase) *UserHandler {
+func NewUserHandler(usecase *usecase.UserUseCase, writer *kafka.Writer) *UserHandler {
 	return &UserHandler{
 		useCase: usecase,
+		writer:  writer,
 	}
 }
 
@@ -122,5 +126,31 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"newUser": newUser})
+	// Отправка сообщения в Kafka
+	go h.sendToKafka(newUser)
+
+	ctx.JSON(http.StatusCreated, gin.H{"newUser ": newUser})
+}
+
+func (h *UserHandler) sendToKafka(user domain.User) {
+	kafkaMessage := KafkaMessage{
+		ID:   user.ID, // Предполагается, что у вас есть поле ID в структуре User
+		Data: user,
+	}
+
+	msg, err := json.Marshal(kafkaMessage)
+	if err != nil {
+		log.Println("Error marshaling user:", err)
+		return
+	}
+
+	err = h.writer.WriteMessages(context.Background(),
+		kafka.Message{
+			Key:   []byte(fmt.Sprint(kafkaMessage.ID)),
+			Value: msg,
+		},
+	)
+	if err != nil {
+		log.Println("Error sending message to Kafka:", err)
+	}
 }

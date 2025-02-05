@@ -2,24 +2,22 @@ package usecase
 
 import (
 	"errors"
-	"matrixDocker/API/internal/domain"
-	"matrixDocker/API/internal/repository"
+	"matrixDocker/internal/domain"
+	"matrixDocker/internal/repository"
 )
 
 type UserUseCase struct {
 	repo repository.UserRepository
 }
 
-// UseCase интерфейс для работы с пользователями
 type UseCase interface {
 	FindUser(id int) (domain.User, error)
 	FindUsers() ([]domain.User, error)
-	CreateUser(newUser domain.User) (string, error)
+	CreateUser(newUser domain.User) (domain.User, error)
 	DeleteUser(id int) (string, error)
 	UpdateUser(id int, updateUser domain.User) (domain.User, error)
 }
 
-// NewUser UseCase создает новый экземпляр UserUseCase
 func NewUserUseCase(repo repository.UserRepository) *UserUseCase {
 	return &UserUseCase{repo: repo}
 }
@@ -41,32 +39,29 @@ func (u *UserUseCase) FindUsers() ([]domain.User, error) {
 	return users, nil
 }
 
-// CreateUser  создает нового пользователя
-func (u *UserUseCase) CreateUser(newUser domain.User) (string, error) {
-	err := u.repo.CreateUser(newUser)
+func (u *UserUseCase) CreateUser(newUser domain.User) (domain.User, error) {
+	newUser, err := u.repo.CreateUser(newUser)
 	if err != nil {
-		return "", err
+		return domain.User{}, err
 	}
-	return "User  created successfully", nil
+	return newUser, nil
 }
 
 // DeleteUser  удаляет пользователя по ID
 func (u *UserUseCase) DeleteUser(id int) (string, error) {
-	err := u.repo.DeleteUser(id)
+	_, err := u.repo.DeleteUser(id)
 	if err != nil {
 		return "", errors.New("user not found")
 	}
 	return "User  deleted successfully", nil
 }
 
-// UpdateUser  обновляет данные пользователя
 func (u *UserUseCase) UpdateUser(id int, updateUser domain.User) (domain.User, error) {
-	existingUser, err := u.repo.FindUser(id)
+	_, err := u.repo.FindUser(id)
 	if err != nil {
 		return domain.User{}, errors.New("user not found")
 	}
-	updateUser.ID = existingUser.ID // Сохраняем старый ID
-	err = u.repo.UpdateUser(updateUser)
+	_, err = u.repo.UpdateUser(id, updateUser)
 	if err != nil {
 		return domain.User{}, err
 	}

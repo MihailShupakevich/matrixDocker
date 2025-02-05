@@ -5,3 +5,8 @@ type User struct {
 	Username string `json:"username"`
 	Age      int    `json:"age"`
 }
+
+type Kafka struct {
+	ID   int  `json:"id"`
+	Data User `json:"data"`
+}

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"gorm.io/gorm"
-	"matrixDocker/API/internal/domain"
+	"matrixDocker/internal/domain"
 )
 
 type UserRepository struct {
@@ -47,9 +47,9 @@ func (r *UserRepository) DeleteUser(id int) (string, error) {
 	return "User  successfully deleted", nil
 }
 
-func (r *UserRepository) CreateUser(newUser domain.User) (string, error) {
+func (r *UserRepository) CreateUser(newUser domain.User) (domain.User, error) {
 	if err := r.db.Create(&newUser).Error; err != nil {
-		return "", err
+		return domain.User{}, err
 	}
-	return "User  successfully created", nil
+	return newUser, nil
 }
