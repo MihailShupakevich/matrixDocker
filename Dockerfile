@@ -1,17 +1,12 @@
-# Используем официальный образ Golang
-FROM golang:1.23
 
-# Устанавливаем рабочую директорию
+FROM golang:1.23 AS builder
+
 WORKDIR /app
 
-# Копируем go.mod и go.sum
-COPY go.mod go.sum ./
+COPY go.mod go.mod go.sum go.sum ./
 
-# Загружаем зависимости
 RUN go mod download
 
-# Копируем остальные файлы проекта
 COPY . .
 
-# Указываем команду для запуска приложения
-CMD ["go", "run", "main.go"]
+CMD ["go", "run", "cmd/main.go"]

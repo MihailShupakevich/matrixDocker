@@ -14,37 +14,28 @@ import (
 )
 
 func main() {
-	dsn := "host=localhost user=dunice password=dunice dbname=dunice port=5432 sslmode=disable"
+	dsn := "host=db user=dunice password=dunice dbname=dunice port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
-	fmt.Println("1. Database is active!")
-
-	// Автоматическая миграция структуры User
 	if err := db.AutoMigrate(&domain.User{}); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
-	fmt.Println("2. User entity migrated to the database")
-
-	// Создание Kafka writer
 	writer := &kafka.Writer{
-		Addr:     kafka.TCP("localhost:9092"), // Укажите адрес вашего Kafka брокера
-		Topic:    "user-topic",                // Укажите тему, в которую будете отправлять сообщения
+		Addr:     kafka.TCP("kafka:9092"),
+		Topic:    "user-topic",
 		Balancer: &kafka.Hash{},
 	}
 
-	// Инициализация репозитория, юзкейса и обработчика
 	userRepo := repository.NewUserRepository(db)
-	userUseCase := usecase.NewUserUseCase(*userRepo) // Передаем указатель на userRepo
+	userUseCase := usecase.NewUserUseCase(*userRepo)
 	userHandler := handlers.NewUserHandler(userUseCase, writer)
 
-	// Настройка маршрутизатора Gin
 	router := gin.Default()
 
-	// Определение маршрутов для пользователей
 	userRoutes := router.Group("/users")
 	{
 		userRoutes.GET("/", userHandler.FindUsers)
@@ -56,7 +47,6 @@ func main() {
 
 	fmt.Println("3. User routes are set up")
 
-	// Запуск сервера
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("failed to run server: %v", err)
 	}

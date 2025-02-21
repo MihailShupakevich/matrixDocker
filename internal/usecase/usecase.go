@@ -22,7 +22,6 @@ func NewUserUseCase(repo repository.UserRepository) *UserUseCase {
 	return &UserUseCase{repo: repo}
 }
 
-// FindUser  находит пользователя по ID
 func (u *UserUseCase) FindUser(id int) (domain.User, error) {
 	user, err := u.repo.FindUser(id)
 	if err != nil {
@@ -47,7 +46,6 @@ func (u *UserUseCase) CreateUser(newUser domain.User) (domain.User, error) {
 	return newUser, nil
 }
 
-// DeleteUser  удаляет пользователя по ID
 func (u *UserUseCase) DeleteUser(id int) (string, error) {
 	_, err := u.repo.DeleteUser(id)
 	if err != nil {
