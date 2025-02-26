@@ -1,21 +1,53 @@
 package main
 
 import (
-  "fmt"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/segmentio/kafka-go"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"log"
+	"matrixDocker/internal/domain"
+	"matrixDocker/internal/handlers"
+	"matrixDocker/internal/repository"
+	"matrixDocker/internal/usecase"
 )
 
-//TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
-// the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
-
 func main() {
-  //TIP <p>Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined text
-  // to see how GoLand suggests fixing the warning.</p><p>Alternatively, if available, click the lightbulb to view possible fixes.</p>
-  s := "gopher"
-  fmt.Println("Hello and welcome, %s!", s)
+	dsn := "host=db user=dunice password=dunice dbname=dunice port=5432 sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
 
-  for i := 1; i <= 5; i++ {
-	//TIP <p>To start your debugging session, right-click your code in the editor and select the Debug option.</p> <p>We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-	// for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.</p>
-	fmt.Println("i =", 100/i)
-  }
+	if err := db.AutoMigrate(&domain.User{}); err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
+
+	writer := &kafka.Writer{
+		Addr:     kafka.TCP("kafka:9092"),
+		Topic:    "user-topic",
+		Balancer: &kafka.Hash{},
+	}
+
+	userRepo := repository.NewUserRepository(db)
+	userUseCase := usecase.NewUserUseCase(*userRepo)
+	userHandler := handlers.NewUserHandler(userUseCase, writer)
+
+	router := gin.Default()
+
+	userRoutes := router.Group("/users")
+	{
+		userRoutes.GET("/", userHandler.FindUsers)
+		userRoutes.GET("/:id", userHandler.FindUser)
+		userRoutes.POST("/", userHandler.CreateUser)
+		userRoutes.PUT("/:id", userHandler.UpdateUser)
+		userRoutes.DELETE("/:id", userHandler.DeleteUser)
+	}
+
+	fmt.Println("3. User routes are set up")
+
+	if err := router.Run(":8080"); err != nil {
+		log.Fatalf("failed to run server: %v", err)
+	}
 }
