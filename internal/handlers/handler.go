@@ -1,17 +1,25 @@
 package handlers
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
 	"github.com/segmentio/kafka-go"
+	"golang.org/x/net/context"
 	"log"
 	"matrixDocker/internal/domain"
 	"matrixDocker/internal/usecase"
 	"net/http"
 	"strconv"
 )
+
+type UserHandlerInterface interface {
+	FindUsers(ctx *gin.Context)
+	FindUser(ctx *gin.Context)
+	UpdateUser(ctx *gin.Context)
+	DeleteUser(ctx *gin.Context)
+	CreateUser(ctx *gin.Context)
+}
 
 type KafkaMessage struct {
 	ID   int         `json:"id"`
