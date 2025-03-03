@@ -31,7 +31,7 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository(db)
-	userUseCase := usecase.NewUserUseCase(*userRepo)
+	userUseCase := usecase.NewUserUseCase(userRepo)
 	userHandler := handlers.NewUserHandler(userUseCase, writer)
 
 	router := gin.Default()
