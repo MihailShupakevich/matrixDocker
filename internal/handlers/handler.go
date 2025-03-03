@@ -27,11 +27,11 @@ type KafkaMessage struct {
 }
 
 type UserHandler struct {
-	useCase *usecase.UserUseCase
+	useCase usecase.UseCase
 	writer  *kafka.Writer
 }
 
-func NewUserHandler(usecase *usecase.UserUseCase, writer *kafka.Writer) *UserHandler {
+func NewUserHandler(usecase usecase.UseCase, writer *kafka.Writer) *UserHandler {
 	return &UserHandler{
 		useCase: usecase,
 		writer:  writer,
@@ -39,7 +39,7 @@ func NewUserHandler(usecase *usecase.UserUseCase, writer *kafka.Writer) *UserHan
 }
 
 func (h *UserHandler) FindUsers(ctx *gin.Context) {
-	allUsers, err := h.useCase.FindUsers()
+	allUsers, err := h.useCase.FindUsers(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error finding users"})
 		return
@@ -60,7 +60,7 @@ func (h *UserHandler) FindUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.useCase.FindUser(idInt)
+	user, err := h.useCase.FindUser(ctx, idInt)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "User  not found"})
 		return
@@ -89,7 +89,7 @@ func (h *UserHandler) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.useCase.UpdateUser(idInt, *updateUser)
+	user, err := h.useCase.UpdateUser(ctx, idInt, *updateUser)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating user"})
 		return
@@ -111,7 +111,7 @@ func (h *UserHandler) DeleteUser(ctx *gin.Context) {
 		return
 	}
 
-	message, err := h.useCase.DeleteUser(idInt)
+	message, err := h.useCase.DeleteUser(ctx, idInt)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting user"})
 		return
@@ -128,7 +128,7 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	newUser, err := h.useCase.CreateUser(*body)
+	newUser, err := h.useCase.CreateUser(ctx, *body)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
 		return
