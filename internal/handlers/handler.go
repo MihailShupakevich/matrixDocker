@@ -27,11 +27,11 @@ type KafkaMessage struct {
 }
 
 type UserHandler struct {
-	useCase usecase.UseCase
+	useCase usecase.UseCaseI
 	writer  *kafka.Writer
 }
 
-func NewUserHandler(usecase usecase.UseCase, writer *kafka.Writer) *UserHandler {
+func NewUserHandler(usecase usecase.UseCaseI, writer *kafka.Writer) *UserHandler {
 	return &UserHandler{
 		useCase: usecase,
 		writer:  writer,
