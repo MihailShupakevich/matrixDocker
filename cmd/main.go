@@ -40,7 +40,7 @@ func main() {
 		userRoutes.GET("/", userHandler.FindUsers)
 		userRoutes.GET("/get/:id", userHandler.FindUser)
 		userRoutes.POST("/", userHandler.CreateUser)
-		userRoutes.PUT("/:id", userHandler.UpdateUser)
+		userRoutes.PATCH("/:id", userHandler.UpdateUser)
 		userRoutes.DELETE("/:id", userHandler.DeleteUser)
 	}
 

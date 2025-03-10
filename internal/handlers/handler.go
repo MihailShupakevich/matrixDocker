@@ -95,7 +95,7 @@ func (h *UserHandler) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"user": user})
+	ctx.JSON(http.StatusOK, user)
 }
 
 func (h *UserHandler) DeleteUser(ctx *gin.Context) {

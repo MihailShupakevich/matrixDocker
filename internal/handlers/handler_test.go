@@ -123,22 +123,20 @@ func TestUpdateUser(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
-	userData := domain.User{
-		ID:       0,
-		Username: "Salaga",
-		Age:      14,
-	}
-	updatedUserData := domain.User{ID: 0, Username: "Salaga", Age: 15}
+	updatedUserData := domain.User{ID: 1, Username: "Salaga", Age: 15}
 	jsonData, err := json.Marshal(updatedUserData)
-	fmt.Println(err)
-	idUser := 0
-	req, _ := http.NewRequest("PATCH", "/0", bytes.NewBuffer(jsonData))
+	assert.Nil(t, err)
+	idUser := 1
+	req, _ := http.NewRequest("PATCH", fmt.Sprintf("/%d", idUser), bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	ctx.Request = req
-	mockUseCase.On("UpdateUser", mock.Anything, idUser, updatedUserData).Return(idUser, updatedUserData, nil).Once()
+	ctx.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(idUser)}}
+	mockUseCase.On("UpdateUser", mock.Anything, idUser, updatedUserData).Return(updatedUserData, nil).Once()
 	h.UpdateUser(ctx)
-	assert.Equal(t, userData.Username, updatedUserData.Username)
+	updatedUser := new(domain.User)
+	_ = ctx.ShouldBindJSON(&updatedUser)
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, string(jsonData), w.Body.String())
 	mockUseCase.AssertExpectations(t)
 }
 
@@ -148,11 +146,13 @@ func TestDeleteUser(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	idUser := 1
-	req, _ := http.NewRequest("DELETE", fmt.Sprintf("/%d", idUser), nil)
+	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/%d", idUser), nil)
 	req.Header.Set("Content-Type", "application/json")
 	ctx.Request = req
-	mockUseCase.On("DeleteUser ", mock.Anything, idUser).Return("User  deleted", nil).Once()
+	ctx.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(idUser)}}
+	mockUseCase.On("DeleteUser", mock.Anything, idUser).Return("User deleted", nil).Once()
 	h.DeleteUser(ctx)
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, `{"message":"User deleted"}`, w.Body.String())
 	mockUseCase.AssertExpectations(t)
 }
