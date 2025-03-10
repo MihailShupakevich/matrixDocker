@@ -11,6 +11,7 @@ import (
 	"matrixDocker/internal/domain"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 )
 
@@ -40,6 +41,57 @@ func (m *MockUserUseCase) DeleteUser(ctx context.Context, id int) (string, error
 func (m *MockUserUseCase) CreateUser(ctx context.Context, user domain.User) (newUser domain.User, err error) {
 	args := m.Called(ctx, user)
 	return args.Get(0).(domain.User), args.Error(1)
+}
+
+func TestFindUsers(t *testing.T) {
+	mockUseCase := new(MockUserUseCase)
+	h := NewUserHandler(mockUseCase, nil)
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	usersData := []domain.User{
+		domain.User{
+			ID:       1,
+			Username: "user1",
+			Age:      15,
+		},
+		domain.User{
+			ID:       2,
+			Username: "user2",
+			Age:      16,
+		},
+	}
+
+	jsonDataUser, _ := json.Marshal(usersData)
+
+	req, _ := http.NewRequest("GET", "/", bytes.NewBuffer(jsonDataUser))
+	req.Header.Set("Content-Type", "application/json")
+	ctx.Request = req
+	mockUseCase.On("FindUsers", mock.Anything).Return(usersData, nil).Once()
+	h.FindUsers(ctx)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, string(jsonDataUser), w.Body.String())
+	mockUseCase.AssertExpectations(t)
+}
+
+func TestFindUser(t *testing.T) {
+	mockUseCase := new(MockUserUseCase)
+	h := NewUserHandler(mockUseCase, nil)
+	rr := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(rr)
+	userId := 1
+	expectedUser := domain.User{ID: userId, Username: "user1", Age: 15}
+	mockUseCase.On("FindUser", mock.Anything, userId).Return(expectedUser, nil).Once()
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/%d", userId), nil)
+	req.Header.Set("Content-Type", "application/json")
+	ctx.Request = req
+	ctx.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(userId)}}
+
+	h.FindUser(ctx)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	fmt.Println(rr.Body.String())
+	assert.JSONEq(t, `{"ID":1,"Username":"user1","Age":15}`, rr.Body.String())
+	mockUseCase.AssertExpectations(t)
 }
 
 func TestCreateUser(t *testing.T) {
@@ -102,58 +154,5 @@ func TestDeleteUser(t *testing.T) {
 	mockUseCase.On("DeleteUser ", mock.Anything, idUser).Return("User  deleted", nil).Once()
 	h.DeleteUser(ctx)
 	assert.Equal(t, http.StatusOK, w.Code)
-	mockUseCase.AssertExpectations(t)
-}
-
-func TestFindUser(t *testing.T) {
-	mockUseCase := new(MockUserUseCase)
-	h := NewUserHandler(mockUseCase, nil)
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-	idUser := 1
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/%d", idUser), nil)
-	req.Header.Set("Content-Type", "application/json")
-	ctx.Request = req
-
-	mockUseCase.On("FindUser", mock.Anything).Return(domain.User{
-		Username: "Alex",
-		Age:      20,
-	}, nil).Once()
-	h.FindUser(ctx)
-	assert.Equal(t, http.StatusOK, w.Code)
-	response := new(domain.User)
-	err := ctx.ShouldBindJSON(response)
-	assert.Nil(t, err)
-	assert.Equal(t, "Alex", response.Username)
-	assert.Equal(t, 20, response.Age)
-	mockUseCase.AssertExpectations(t)
-}
-
-func TestFindUsers(t *testing.T) {
-	mockUseCase := new(MockUserUseCase)
-	h := NewUserHandler(mockUseCase, nil)
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-	ctx.Request = httptest.NewRequest("GET", "/", nil)
-	mockUseCase.On("FindUsers", mock.Anything).Return([]domain.User{
-		{
-			Username: "Alex",
-			Age:      20,
-		},
-		{
-			Username: "Bob",
-			Age:      25,
-		},
-	}, nil).Once()
-	h.FindUsers(ctx)
-	assert.Equal(t, http.StatusOK, w.Code)
-	var response domain.User
-	err := ctx.BindJSON(&response)
-	assert.NoError(t, err)
-	assert.Len(t, response, 2)
-	assert.Equal(t, "Alex", response.Username)
-	assert.Equal(t, 20, response.Age)
-	assert.Equal(t, "Bob", response.Username)
-	assert.Equal(t, 25, response.Age)
 	mockUseCase.AssertExpectations(t)
 }

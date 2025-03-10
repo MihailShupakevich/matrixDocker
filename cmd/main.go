@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/driver/postgres"
@@ -39,15 +38,14 @@ func main() {
 	userRoutes := router.Group("/users")
 	{
 		userRoutes.GET("/", userHandler.FindUsers)
-		userRoutes.GET("/:id", userHandler.FindUser)
+		userRoutes.GET("/get/:id", userHandler.FindUser)
 		userRoutes.POST("/", userHandler.CreateUser)
 		userRoutes.PUT("/:id", userHandler.UpdateUser)
 		userRoutes.DELETE("/:id", userHandler.DeleteUser)
 	}
 
-	fmt.Println("3. User routes are set up")
-
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("failed to run server: %v", err)
 	}
+
 }

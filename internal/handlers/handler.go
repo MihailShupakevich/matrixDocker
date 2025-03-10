@@ -44,7 +44,7 @@ func (h *UserHandler) FindUsers(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error finding users"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"users": allUsers})
+	ctx.JSON(http.StatusOK, allUsers)
 }
 
 func (h *UserHandler) FindUser(ctx *gin.Context) {
@@ -66,7 +66,7 @@ func (h *UserHandler) FindUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"user": user})
+	ctx.JSON(http.StatusOK, user)
 }
 
 func (h *UserHandler) UpdateUser(ctx *gin.Context) {
