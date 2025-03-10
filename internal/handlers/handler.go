@@ -137,7 +137,7 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
 	// Отправка сообщения в Kafka
 	go h.sendToKafka(newUser)
 
-	ctx.JSON(http.StatusCreated, gin.H{"newUser ": newUser})
+	ctx.JSON(http.StatusCreated, gin.H{"newUser": newUser})
 }
 
 func (h *UserHandler) sendToKafka(user domain.User) {

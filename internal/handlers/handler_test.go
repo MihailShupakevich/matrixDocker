@@ -62,7 +62,8 @@ func TestFindUsers(t *testing.T) {
 		},
 	}
 
-	jsonDataUser, _ := json.Marshal(usersData)
+	jsonDataUser, err := json.Marshal(usersData)
+	assert.NoError(t, err)
 
 	req, _ := http.NewRequest("GET", "/", bytes.NewBuffer(jsonDataUser))
 	req.Header.Set("Content-Type", "application/json")
@@ -89,7 +90,6 @@ func TestFindUser(t *testing.T) {
 
 	h.FindUser(ctx)
 	assert.Equal(t, http.StatusOK, rr.Code)
-	fmt.Println(rr.Body.String())
 	assert.JSONEq(t, `{"ID":1,"Username":"user1","Age":15}`, rr.Body.String())
 	mockUseCase.AssertExpectations(t)
 }
@@ -105,7 +105,8 @@ func TestCreateUser(t *testing.T) {
 		Username: "Salaga",
 		Age:      14,
 	}
-	jsonData, _ := json.Marshal(userData)
+	jsonData, err := json.Marshal(userData)
+	assert.NoError(t, err)
 
 	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
@@ -114,6 +115,10 @@ func TestCreateUser(t *testing.T) {
 	mockUseCase.On("CreateUser", mock.Anything, userData).Return(userData, nil).Once()
 	h.CreateUser(ctx)
 	assert.Equal(t, http.StatusCreated, w.Code)
+	expectedResponse := gin.H{"newUser": userData}
+	expectedJSON, err1 := json.Marshal(expectedResponse)
+	assert.NoError(t, err1)
+	assert.JSONEq(t, string(expectedJSON), w.Body.String())
 	mockUseCase.AssertExpectations(t)
 }
 
@@ -125,7 +130,7 @@ func TestUpdateUser(t *testing.T) {
 
 	updatedUserData := domain.User{ID: 1, Username: "Salaga", Age: 15}
 	jsonData, err := json.Marshal(updatedUserData)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	idUser := 1
 	req, _ := http.NewRequest("PATCH", fmt.Sprintf("/%d", idUser), bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
