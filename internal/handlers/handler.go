@@ -53,19 +53,16 @@ func (h *UserHandler) FindUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User  ID is required"})
 		return
 	}
-
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-
 	user, err := h.useCase.FindUser(ctx, idInt)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "User  not found"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, user)
 }
 
@@ -76,25 +73,21 @@ func (h *UserHandler) UpdateUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	id := ctx.Param("id")
 	if id == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User  ID is required"})
 		return
 	}
-
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-
 	user, err := h.useCase.UpdateUser(ctx, idInt, *updateUser)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating user"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, user)
 }
 
@@ -104,19 +97,16 @@ func (h *UserHandler) DeleteUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User  ID is required"})
 		return
 	}
-
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-
 	message, err := h.useCase.DeleteUser(ctx, idInt)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting user"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, gin.H{"message": message})
 }
 
@@ -127,22 +117,18 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	newUser, err := h.useCase.CreateUser(ctx, *body)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
 		return
 	}
-
-	// Отправка сообщения в Kafka
 	go h.sendToKafka(newUser)
-
 	ctx.JSON(http.StatusCreated, gin.H{"newUser": newUser})
 }
 
 func (h *UserHandler) sendToKafka(user domain.User) {
 	kafkaMessage := KafkaMessage{
-		ID:   user.ID, // Предполагается, что у вас есть поле ID в структуре User
+		ID:   user.ID,
 		Data: user,
 	}
 

@@ -1,20 +1,32 @@
 package repository
 
 import (
-	"context"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/postgres"
+	"golang.org/x/net/context"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"log"
 	"matrixDocker/internal/domain"
+	"os"
 	"testing"
 )
 
+var db *gorm.DB
+
+func TestMain(m *testing.M) {
+	var err error
+	db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to open database: %v", err)
+	}
+	if err := db.AutoMigrate(&domain.User{}); err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
+	code := m.Run()
+	os.Exit(code)
+}
+
 func TestFindUser(t *testing.T) {
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: "host=localhost user=dunice password=dunice dbname=dunice port=5432 sslmode=disable",
-	}))
-	require.NoError(t, err)
-	db.Exec("TRUNCATE TABLE users;")
 	testUser := domain.User{ID: 1, Username: "John Doe", Age: 30}
 	db.Create(&testUser)
 	repo := NewUserRepository(db)
@@ -25,11 +37,6 @@ func TestFindUser(t *testing.T) {
 }
 
 func TestFindAllUsers(t *testing.T) {
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: "host=localhost user=dunice password=dunice dbname=dunice port=5432 sslmode=disable",
-	}))
-	require.NoError(t, err)
-	db.Exec("TRUNCATE TABLE users;")
 	testUsers := []domain.User{
 		{ID: 1, Username: "Alice", Age: 25},
 		{ID: 2, Username: "Bob", Age: 30},
@@ -45,11 +52,6 @@ func TestFindAllUsers(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: "host=localhost user=dunice password=dunice dbname=dunice port=5432 sslmode=disable",
-	}))
-	require.NoError(t, err)
-	db.Exec("TRUNCATE TABLE users;")
 	newUser := domain.User{Username: "New User", Age: 20}
 	repo := NewUserRepository(db)
 	ctx := context.Background()
@@ -61,11 +63,6 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: "host=localhost user=dunice password=dunice dbname=dunice port=5432 sslmode=disable",
-	}))
-	require.NoError(t, err)
-	db.Exec("TRUNCATE TABLE users;")
 	testUser := domain.User{ID: 1, Username: "John Doe", Age: 30}
 	db.Create(&testUser)
 	updatedUser := domain.User{ID: 1, Username: "John Doe", Age: 35}
@@ -77,11 +74,6 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: "host=localhost user=dunice password=dunice dbname=dunice port=5432 sslmode=disable",
-	}))
-	require.NoError(t, err)
-	db.Exec("TRUNCATE TABLE users;")
 	testUser := domain.User{ID: 1, Username: "John Doe", Age: 30}
 	db.Create(&testUser)
 	repo := NewUserRepository(db)
