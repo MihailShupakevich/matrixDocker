@@ -40,11 +40,11 @@ func (u *UserUseCase) FindUsers(ctx context.Context) ([]domain.User, error) {
 }
 
 func (u *UserUseCase) CreateUser(ctx context.Context, newUser domain.User) (domain.User, error) {
-	newUser, err := u.repo.CreateUser(ctx, newUser)
+	newUserCreated, err := u.repo.CreateUser(ctx, newUser)
 	if err != nil {
 		return domain.User{}, err
 	}
-	return newUser, nil
+	return newUserCreated, nil
 }
 
 func (u *UserUseCase) DeleteUser(ctx context.Context, id int) (string, error) {
@@ -52,15 +52,11 @@ func (u *UserUseCase) DeleteUser(ctx context.Context, id int) (string, error) {
 	if err != nil {
 		return "", errors.New("user not found")
 	}
-	return "User  deleted successfully", nil
+	return "User  successfully deleted", nil
 }
 
 func (u *UserUseCase) UpdateUser(ctx context.Context, id int, updateUser domain.User) (domain.User, error) {
-	_, err := u.repo.FindUser(ctx, id)
-	if err != nil {
-		return domain.User{}, errors.New("user not found")
-	}
-	_, err = u.repo.UpdateUser(ctx, id, updateUser)
+	_, err := u.repo.UpdateUser(ctx, id, updateUser)
 	if err != nil {
 		return domain.User{}, err
 	}

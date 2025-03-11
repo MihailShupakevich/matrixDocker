@@ -106,7 +106,7 @@ func TestCreateUser(t *testing.T) {
 		Age:      14,
 	}
 	jsonData, err := json.Marshal(userData)
-	assert.NoError(t, err)
+	assert.Nil(t, err)
 
 	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
