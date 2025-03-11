@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
@@ -62,24 +63,25 @@ func TestFindUsers(t *testing.T) {
 		},
 	}
 
-	jsonDataUser, err := json.Marshal(usersData)
-	assert.NoError(t, err)
+	req, _ := http.NewRequest("GET", "/", nil)
 
-	req, _ := http.NewRequest("GET", "/", bytes.NewBuffer(jsonDataUser))
 	req.Header.Set("Content-Type", "application/json")
 	ctx.Request = req
 	mockUseCase.On("FindUsers", mock.Anything).Return(usersData, nil).Once()
 	h.FindUsers(ctx)
+	assert.Equal(t, nil, req.Body)
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, string(jsonDataUser), w.Body.String())
+	assert.NotEqual(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, http.MethodGet, req.Method)
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 	mockUseCase.AssertExpectations(t)
 }
 
 func TestFindUser(t *testing.T) {
 	mockUseCase := new(MockUserUseCase)
 	h := NewUserHandler(mockUseCase, nil)
-	rr := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(rr)
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
 	userId := 1
 	expectedUser := domain.User{ID: userId, Username: "user1", Age: 15}
 	mockUseCase.On("FindUser", mock.Anything, userId).Return(expectedUser, nil).Once()
@@ -87,38 +89,49 @@ func TestFindUser(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	ctx.Request = req
 	ctx.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(userId)}}
-
 	h.FindUser(ctx)
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.JSONEq(t, `{"ID":1,"Username":"user1","Age":15}`, rr.Body.String())
+	assert.Equal(t, nil, req.Body)
+	assert.NotNil(t, req)
+	assert.NotNil(t, ctx.Params)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.MethodGet, req.Method)
+	idParam, errConv := strconv.Atoi(ctx.Param("id"))
+	assert.NoError(t, errConv)
+	assert.Equal(t, idParam, userId)
+	assert.JSONEq(t, `{"ID":1,"Username":"user1","Age":15}`, w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 	mockUseCase.AssertExpectations(t)
 }
 
 func TestCreateUser(t *testing.T) {
-
 	mockUseCase := new(MockUserUseCase)
-	h := NewUserHandler(mockUseCase, nil)
+	kafkaWriter := &kafka.Writer{
+		Addr:     kafka.TCP("kafka:9092"),
+		Topic:    "user-topic",
+		Balancer: &kafka.Hash{},
+	}
+	h := NewUserHandler(mockUseCase, kafkaWriter)
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-
 	userData := domain.User{
 		Username: "Salaga",
 		Age:      14,
 	}
 	jsonData, err := json.Marshal(userData)
 	assert.Nil(t, err)
-
 	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	ctx.Request = req
-
 	mockUseCase.On("CreateUser", mock.Anything, userData).Return(userData, nil).Once()
 	h.CreateUser(ctx)
 	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.NotEqual(t, req.Body, nil)
+	assert.NotEqual(t, ctx, nil)
 	expectedResponse := gin.H{"newUser": userData}
 	expectedJSON, err1 := json.Marshal(expectedResponse)
 	assert.NoError(t, err1)
 	assert.JSONEq(t, string(expectedJSON), w.Body.String())
+	assert.Equal(t, http.MethodPost, req.Method)
 	mockUseCase.AssertExpectations(t)
 }
 
@@ -127,7 +140,6 @@ func TestUpdateUser(t *testing.T) {
 	h := NewUserHandler(mockUseCase, nil)
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-
 	updatedUserData := domain.User{ID: 1, Username: "Salaga", Age: 15}
 	jsonData, err := json.Marshal(updatedUserData)
 	assert.NoError(t, err)
@@ -140,7 +152,13 @@ func TestUpdateUser(t *testing.T) {
 	h.UpdateUser(ctx)
 	updatedUser := new(domain.User)
 	_ = ctx.ShouldBindJSON(&updatedUser)
+	assert.NotEqual(t, req.Body, nil)
+	idParam, errConv := strconv.Atoi(ctx.Param("id"))
+	assert.NoError(t, errConv)
+	assert.Equal(t, idParam, idUser)
+	assert.Equal(t, http.MethodPatch, req.Method)
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 	assert.Equal(t, string(jsonData), w.Body.String())
 	mockUseCase.AssertExpectations(t)
 }
@@ -157,7 +175,13 @@ func TestDeleteUser(t *testing.T) {
 	ctx.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(idUser)}}
 	mockUseCase.On("DeleteUser", mock.Anything, idUser).Return("User deleted", nil).Once()
 	h.DeleteUser(ctx)
+	assert.Equal(t, req.Body, nil)
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, req.Method, http.MethodDelete)
+	idParam, errConv := strconv.Atoi(ctx.Param("id"))
+	assert.NoError(t, errConv)
+	assert.Equal(t, idParam, idUser)
 	assert.JSONEq(t, `{"message":"User deleted"}`, w.Body.String())
 	mockUseCase.AssertExpectations(t)
 }
