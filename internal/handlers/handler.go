@@ -50,7 +50,7 @@ func (h *UserHandler) FindUsers(ctx *gin.Context) {
 func (h *UserHandler) FindUser(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if id == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User  ID is required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
 		return
 	}
 	idInt, err := strconv.Atoi(id)
@@ -60,7 +60,7 @@ func (h *UserHandler) FindUser(ctx *gin.Context) {
 	}
 	user, err := h.useCase.FindUser(ctx, idInt)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "User  not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 	ctx.JSON(http.StatusOK, user)
@@ -70,12 +70,12 @@ func (h *UserHandler) UpdateUser(ctx *gin.Context) {
 	updateUser := new(domain.User)
 	err := ctx.BindJSON(updateUser)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON body"})
 		return
 	}
 	id := ctx.Param("id")
 	if id == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User  ID is required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
 		return
 	}
 	idInt, err := strconv.Atoi(id)
@@ -114,7 +114,7 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
 	body := new(domain.User)
 	err := ctx.BindJSON(body)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON body"})
 		return
 	}
 	newUser, err := h.useCase.CreateUser(ctx, *body)

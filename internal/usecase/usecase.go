@@ -42,7 +42,7 @@ func (u *UserUseCase) FindUsers(ctx context.Context) ([]domain.User, error) {
 func (u *UserUseCase) CreateUser(ctx context.Context, newUser domain.User) (domain.User, error) {
 	newUserCreated, err := u.repo.CreateUser(ctx, newUser)
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, errors.New("user not created")
 	}
 	return newUserCreated, nil
 }
@@ -50,7 +50,7 @@ func (u *UserUseCase) CreateUser(ctx context.Context, newUser domain.User) (doma
 func (u *UserUseCase) DeleteUser(ctx context.Context, id int) (string, error) {
 	_, err := u.repo.DeleteUser(ctx, id)
 	if err != nil {
-		return "", errors.New("user not found")
+		return "", errors.New("user not deleted")
 	}
 	return "User  successfully deleted", nil
 }
@@ -58,7 +58,7 @@ func (u *UserUseCase) DeleteUser(ctx context.Context, id int) (string, error) {
 func (u *UserUseCase) UpdateUser(ctx context.Context, id int, updateUser domain.User) (domain.User, error) {
 	_, err := u.repo.UpdateUser(ctx, id, updateUser)
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, errors.New("user not updated")
 	}
 	return updateUser, nil
 }
