@@ -19,24 +19,16 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
-	if err := db.AutoMigrate(&domain.User{}); err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
+	if errMigrate := db.AutoMigrate(&domain.User{}); errMigrate != nil {
+		log.Fatalf("failed to migrate database: %v", errMigrate)
 	}
 	code := m.Run()
 	os.Exit(code)
-}
 
-func TestFindUser(t *testing.T) {
-	testUser := domain.User{ID: 1, Username: "John Doe", Age: 30}
-	db.Create(&testUser)
-	repo := NewUserRepository(db)
-	ctx := context.Background()
-	user, err := repo.FindUser(ctx, 1)
-	require.NoError(t, err)
-	require.EqualValues(t, testUser, user)
 }
 
 func TestFindAllUsers(t *testing.T) {
+	db.Exec("DELETE FROM users;")
 	testUsers := []domain.User{
 		{ID: 1, Username: "Alice", Age: 25},
 		{ID: 2, Username: "Bob", Age: 30},
@@ -48,10 +40,25 @@ func TestFindAllUsers(t *testing.T) {
 	ctx := context.Background()
 	users, err := repo.FindAllUsers(ctx)
 	require.NoError(t, err)
-	require.ElementsMatch(t, testUsers, users)
+	require.Equal(t, testUsers, users)
+	require.NotNil(t, ctx)
+}
+
+func TestFindUser(t *testing.T) {
+	db.Exec("DELETE FROM users;")
+	testUser := domain.User{ID: 1, Username: "John Doe", Age: 30}
+	db.Create(&testUser)
+	repo := NewUserRepository(db)
+	ctx := context.Background()
+	user, err := repo.FindUser(ctx, 1)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.NotNil(t, ctx)
+	require.EqualValues(t, testUser, user)
 }
 
 func TestCreateUser(t *testing.T) {
+	db.Exec("DELETE FROM users;")
 	newUser := domain.User{Username: "New User", Age: 20}
 	repo := NewUserRepository(db)
 	ctx := context.Background()
@@ -60,9 +67,11 @@ func TestCreateUser(t *testing.T) {
 	require.NotNil(t, createdUser)
 	require.Equal(t, newUser.Username, createdUser.Username)
 	require.Equal(t, newUser.Age, createdUser.Age)
+	require.NotNil(t, ctx)
 }
 
 func TestUpdateUser(t *testing.T) {
+	db.Exec("DELETE FROM users;")
 	testUser := domain.User{ID: 1, Username: "John Doe", Age: 30}
 	db.Create(&testUser)
 	updatedUser := domain.User{ID: 1, Username: "John Doe", Age: 35}
@@ -71,14 +80,18 @@ func TestUpdateUser(t *testing.T) {
 	updated, err := repo.UpdateUser(ctx, testUser.ID, updatedUser)
 	require.NoError(t, err)
 	require.EqualValues(t, updatedUser, updated)
+	require.NotNil(t, ctx)
 }
 
 func TestDeleteUser(t *testing.T) {
+	db.Exec("DELETE FROM users;")
 	testUser := domain.User{ID: 1, Username: "John Doe", Age: 30}
 	db.Create(&testUser)
 	repo := NewUserRepository(db)
 	ctx := context.Background()
 	msg, err := repo.DeleteUser(ctx, 1)
 	require.NoError(t, err)
+	require.NotEqual(t, msg, "")
 	require.Equal(t, "User successfully deleted", msg)
+	require.NotNil(t, ctx)
 }
